@@ -18,10 +18,17 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.graphics.Bitmap;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public class UploadActivity extends AppCompatActivity {
 
@@ -31,7 +38,8 @@ public class UploadActivity extends AppCompatActivity {
     Uri imageData;
 
     private FirebaseAuth firebaseAuth;
-
+    private FirebaseStorage firebaseStorage;
+    private StorageReference storageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +50,8 @@ public class UploadActivity extends AppCompatActivity {
         commentText = findViewById(R.id.commandText);
 
         firebaseAuth = FirebaseAuth.getInstance();
-
+        firebaseStorage = FirebaseStorage.getInstance();
+        storageReference = firebaseStorage.getReference();
     }
 
     public void selectImage(View view) {
@@ -101,6 +110,34 @@ public class UploadActivity extends AppCompatActivity {
 
     public void uploadImage(View view){
 
+        UUID uuid = UUID.randomUUID();
+        final String imageName = "images/" + uuid + ".jpg";
+
+        if (imageData != null){
+            storageReference.child(imageName).putFile(imageData).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    Toast.makeText(UploadActivity.this, "Success Example", Toast.LENGTH_LONG).show();
+
+                    // getting the download url to save to database
+
+                    StorageReference downloadReference = FirebaseStorage.getInstance().getReference(imageName);
+                    downloadReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                        @Override
+                        public void onSuccess(Uri uri) {
+                            String downloadUrl = uri.toString();
+                            System.out.println(downloadUrl);
+                        }
+                    });
+
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(UploadActivity.this, e.getLocalizedMessage().toString(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
     }
 
